@@ -8,11 +8,25 @@ import matplotlib.pyplot as plt
 
 from IPython import embed
 
-Dimensions = 1
+Dimensions = 2
 
 A = np.array([[1, 1], [0, 1]]) # Matrix that maps previous state vector to new state vector 
 B = np.array([[0, 0], [0, 1]]) # Matrix that maps control signal to state vector changes
-R = np.matmul([[0.5],[1]], [[0.5,1]]) # The covariance matrix of the noise (wind). Variance is 1 and so is ignored
+
+
+# This is a vector of how the random variable (acceleration) effects each of the state variables
+effectOnP = Dimensions * [0.5]
+effectOnV = Dimensions * [1.]
+for entry in effectOnV:
+    effectOnP.append(entry)
+
+r = effectOnP
+vertical = [[entry] for entry in r]
+horizontal = [r]
+R = np.matmul(vertical, horizontal) # The covariance matrix of the noise (wind). Variance is 1 and so is ignored
+
+
+
 print("R: {}".format(R))
 # timestep is 1, so its left out of all equations
 
@@ -70,16 +84,20 @@ class KalmanFilter:
 
         stateUpdate = np.matmul(A,x_t_1)
         controlUpdate = np.matmul(B, self.ut)
-        # embed()
-        # time.sleep(1)
         epsilon = np.random.multivariate_normal(self.noiseMean, R) #TODO: what is R for dim > 1
         # transpose epsilon so shape makes sense for all dimensions
-        rows = 1 if (len(epsilon.shape) == 1) else epsilon.shape[1] # edge case for 1d arrays 
-        cols = epsilon.shape[0]
-        epsilon = epsilon.reshape(cols, rows)
+        # rows = 1 if (len(epsilon.shape) == 1) else epsilon.shape[1] # edge case for 1d arrays 
+        # cols = epsilon.shape[0]
+        epsilon = epsilon.reshape(2, Dimensions)
+
 
         x_t = stateUpdate + controlUpdate + epsilon
-        self.positionHistory.append(x_t)
+        embed()
+        time.sleep(1)
+        self.position = x_t[0]
+        self.velocity = x_t[1]
+        self.positionHistory.append(self.position)
+        self.velocityHistory.append(self.velocity)
        
         # embed()
         # time.sleep(1)
@@ -119,15 +137,17 @@ def main():
         print("diff: ", abs(z.measurementHistory[-1]-gt.positionHistory[-1]))
 
     x = [entry[0] for entry in gt.positionHistory]
-    # embed()
+    y = [entry[1] for entry in gt.positionHistory]
+    embed()
     x1 = [entry[0] for entry in kf.positionHistory] 
-    
-    y = z.measurementHistory
+    y1 = [entry[1] for entry in kf.positionHistory]
+    # y = z.measurementHistory
 
 
     t = [i for i in range(len(x))]
     # y = [entry[1] for entry in self.positionHistory] if (Dimensions > 1) else [i for i in range(len(x))]
-    plt.plot(t, x, "--", t, x1, t, y)
+    plt.plot(x, y, x1, y1, '--')
+    plt.legend("Ground Truth", "Kalman Filter")
     plt.show()
 
 
