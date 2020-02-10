@@ -3,17 +3,20 @@ import numpy as np
 import time
 import matplotlib
 import os
+from PIL import Image
 matplotlib.use('tkagg')
 
 import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
 
 from IPython import embed
 
 DEBUG = False
-Dimensions = 2
+Dimensions = 1
 WindVariance = 1
 WindMean = 0
-GPSVariance = 0.1
+GPSVariance = 8
+simulation_iterations = 100
 
 
 if (Dimensions == 1):
@@ -41,7 +44,7 @@ for entry in effectOnV:
 r = effectOnP
 vertical = [[entry] for entry in r]
 horizontal = [r]
-R = np.matmul(vertical, horizontal) # The covariance matrix of the noise (wind). Variance is 1 and so is ignored
+R = WindVariance * np.matmul(vertical, horizontal) # The covariance matrix of the noise (wind). Variance is 1 and so is ignored
 
 
 
@@ -62,8 +65,8 @@ def ABA_T(A, B):
 class GroundTruth:
     def __init__(self):
         self.state = np.zeros(2*Dimensions)
-        self.positionHistory = []
-        self.velocityHistory = []
+        self.positionHistory = [self.position()]
+        self.velocityHistory = [self.velocity()]
         self.noiseHistory = []
 
     def GenerateNoise(self):
@@ -107,11 +110,12 @@ class GroundTruth:
 class KalmanFilter:
     def __init__(self):
         self.state = np.zeros(2*Dimensions)
-        self.positionHistory = []
-        self.velocityHistory = []
+        self.positionHistory = [self.position()]
+        self.velocityHistory = [self.velocity()]
         self.ut = np.zeros(2*Dimensions) # control command (none)
         self.noiseMean = np.zeros(2 * Dimensions) # position and velocity for n-dimensions
         self.covariance = np.identity(2*Dimensions) # nxn where n is the number of state variables
+        self.Kalman_gains = []
 
     def position(self):
         return self.state[0] if Dimensions == 1 else self.state[0:2]
@@ -119,31 +123,37 @@ class KalmanFilter:
     def velocity(self):
         return self.state[1] if Dimensions == 1 else self.state[2:]
 
+    # Calculate the state distribution in terms of (mean, covariance)
+    def stateDistribution_noMeasurement(self):
+        x_t_1 = self.state
+        stateUpdate = np.matmul(A,x_t_1)
+        controlUpdate = np.matmul(B, self.ut)
+        mean = stateUpdate + controlUpdate + np.random.multivariate_normal(self.noiseMean, R)
+        covariance = ABA_T(A, self.covariance) + R
+
+        return mean, covariance
+
+
     def update(self, z):
         # from measurement
         z_t = z.measurementHistory[-1]
         C = z.C
         Q = z.Q
 
-        x_t_1 = self.state
+        # x_t_1 = self.state
+        # stateUpdate = np.matmul(A,x_t_1)
+        # controlUpdate = np.matmul(B, self.ut)
+        # mean_bar = stateUpdate + controlUpdate
+        # covariance_bar = ABA_T(A, self.covariance) + R
 
-        stateUpdate = np.matmul(A,x_t_1)
-        controlUpdate = np.matmul(B, self.ut)
-        # epsilon = np.random.multivariate_normal(self.noiseMean, R) #TODO: what is R for dim > 1
-        # transpose epsilon so shape makes sense for all dimensions
-        # rows = 1 if (len(epsilon.shape) == 1) else epsilon.shape[1] # edge case for 1d arrays 
-        # cols = epsilon.shape[0]
-        # epsilon = epsilon.reshape(2, Dimensions)
-
-        mean_bar = stateUpdate + controlUpdate
-        covariance_bar = ABA_T(A, self.covariance) + R# epsilon # Maybe this should be a square matrix
+        mean_bar, covariance_bar = self.stateDistribution_noMeasurement()
 
         CEpC_T_Q = 1/(ABA_T(C, covariance_bar) + Q) if Dimensions == 1 else np.linalg.inv(ABA_T(C, covariance_bar) + Q)
         K = np.matmul(np.matmul(covariance_bar, customT(C)), CEpC_T_Q) # Kalman gain
         if (Dimensions == 1):
-            K = K[:,None]
-        print("Kalman Gain: ", K)
+            K = K[:,None] # transpose 1-D (should be a matrix but its not so do it this way)
 
+        self.Kalman_gains.append(K)
 
         mean = mean_bar + np.matmul(K, (z_t - np.matmul(C, mean_bar))) 
         KC = np.multiply(K,C) if Dimensions == 1 else np.matmul(K,C)
@@ -186,16 +196,59 @@ class GPS:
         z = Cp + delta 
         self.measurementHistory.append(z)
 
+def p1_3():
+    n = 5
+    kf = KalmanFilter()
+    means = [[0., 0.]]
+    covariances = [np.identity(2)]
+    for i in range(n):
+        m, cv = kf.stateDistribution_noMeasurement()
+        kf.state = m
+        kf.covariance = cv
+        means.append(m)
+        covariances.append(cv)
+
+    fig, ax = plt.subplots()
+    x = [entry[0] for entry in means]
+    y = [entry[1] for entry in means]
+    
+    ax.scatter(x,y)
+
+    angle = 15
+    for i in range(len(x)):
+        center = (x[i],y[i])
+
+        eigenVals, eigenVectors = np.linalg.eig(covariances[i])
+        width = 0.2
+        height = 0.1
+        angle+=15.
+        ax.add_patch(Ellipse(center, width, height, angle=angle, facecolor="None", edgecolor="red"))
+    
+    plt.ylabel("velocity")
+    plt.xlabel("position")
+    plt.title("1D State Distribution")
+    # embed()
+    # y = z.measurementHistory
+
+
+    # y = [entry[1] for entry in self.positionHistory] if (Dimensions > 1) else [i for i in range(len(x))]
+    plt.savefig('results.png', bbox_inches='tight')
+    with Image.open('results.png') as img:
+        img.show()
+    
+
+    # embed()
+
 def main():
     print("Start...")
     gt = GroundTruth()
     kf = KalmanFilter()
     z = GPS()
 
-    for i in range(100):
-        gt.update()
+    for i in range(simulation_iterations):
         z.measure(gt)
         kf.update(z)
+        gt.update()
 
         # print("diff: ", abs(z.measurementHistory[-1]-gt.positionHistory[-1]))
 
@@ -210,13 +263,18 @@ def main():
         plt.plot(x, y, x1, y1, '--', x2, y2, 'k+')
         plt.ylabel("Y position")
         plt.xlabel("X position")
+        plt.title("2D Kalman Filter")
 
     else:
         x = [entry for entry in gt.positionHistory]
         x1 = [entry for entry in kf.positionHistory] 
         x2 = [entry for entry in z.measurementHistory]
+        x2.append(None)
         t = [i for i in range(len(x))]
         plt.plot(t, x, t, x1, '--', t, x2, 'k+')
+        plt.ylabel("position")
+        plt.xlabel("timestep")
+        plt.title("1D Kalman Filter")
     # embed()
     # y = z.measurementHistory
 
@@ -224,36 +282,30 @@ def main():
     # y = [entry[1] for entry in self.positionHistory] if (Dimensions > 1) else [i for i in range(len(x))]
     plt.legend(["Ground Truth", "Kalman Filter", "Measurements"])
     plt.savefig('results.png', bbox_inches='tight')
-    from PIL import Image
     with Image.open('results.png') as img:
         img.show()
+
+    # plotKalmanGain(kf.Kalman_gains)
     # plt.show() # this crashes everything on OSX
 
+def plotKalmanGain(K):
+    numPlots = max(K[0].shape)
+    for i in range(numPlots):
+        if (i==0):
+            plt.title("Kalman Gains")
+        plotNumber = 100 * numPlots + 10 + i + 1
+        print(plotNumber)
+        plt.subplot(plotNumber)
+        x = [entry[i] for entry in K]
+        plt.plot(x)
 
-    # x0 = gt.positionHistory
-    # t = [i for i in range(len(x0))]
-    # x1 = gt.velocityHistory
-    # x2 = gt.noiseHistory
-    
-    # fig, ax1 = plt.subplots()
-    # color = 'tab:red'
-    # ax1.set_xlabel('time (s)')
-    # ax1.set_ylabel('position', color=color)
-    # ax1.plot(t, x0, color=color)
-    # ax1.tick_params(axis='y', labelcolor=color)
-
-    # ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-
-    # color = 'tab:blue'
-    # ax2.set_ylabel('velocity', color=color)  # we already handled the x-label with ax1
-    # ax2.plot(t, x1, t, x2)
-    # ax2.tick_params(axis='y', labelcolor=color)
-
-    # fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    # plt.show()
+    plt.savefig('Kalman_gain_results.png', bbox_inches='tight')
+    with Image.open('Kalman_gain_results.png') as img2:
+        img2.show()
 
 if __name__ == "__main__":
     import sys
     if (len(sys.argv) > 1):
         DEBUG = sys.argv[1]
-    main()
+    # main()
+    p1_3()
