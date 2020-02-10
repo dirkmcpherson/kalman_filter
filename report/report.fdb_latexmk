@@ -1,6 +1,6 @@
 # Fdb version 3
-["pdflatex"] 1581189534 "report.tex" "/Users/jstaley/workspace/kalman_filter/report/report.pdf" "report" 1581189535
-  "/Users/jstaley/workspace/kalman_filter/report/report.aux" 1581189535 316 307ae1590498fbaeb743cf80a6b246c5 "pdflatex"
+["pdflatex"] 1581349171 "report.tex" "/Users/jstaley/workspace/kalman_filter/report/report.pdf" "report" 1581349172
+  "/Users/jstaley/workspace/kalman_filter/report/report.aux" 1581349171 622 5cf191f2e403dc5c50fea30f04368447 "pdflatex"
   "/usr/local/texlive/2019/texmf-dist/fonts/map/fontname/texfonts.map" 1511824771 3332 103109f5612ad95229751940c61aada0 ""
   "/usr/local/texlive/2019/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm" 1136768653 1328 c834bbb027764024c09d3d2bf908b5f0 ""
   "/usr/local/texlive/2019/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1136768653 1324 c910af8c371558dc20f2d7822f66fe64 ""
@@ -55,12 +55,13 @@
   "/usr/local/texlive/2019/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1557342064 3277517 23507ed665b4dd9046f0f2a94bbef2be ""
   "/usr/local/texlive/2019/texmf-var/web2c/pdftex/pdflatex.fmt" 1557342086 4259635 562fc36ec496993777a6c428d8bfb811 ""
   "/usr/local/texlive/2019/texmf.cnf" 1557341546 577 d150fef99ac436ad1156e86b0892f6ef ""
-  "report.aux" 1581189535 316 307ae1590498fbaeb743cf80a6b246c5 "pdflatex"
-  "report.tex" 1581189534 4303 4a60ac5729460ccdcf652431941e036e ""
+  "conf_ellipses.png" 1581348460 20351 153bba46e56c31cee8ed6dda4094b376 ""
+  "report.aux" 1581349171 622 5cf191f2e403dc5c50fea30f04368447 "pdflatex"
+  "report.tex" 1581349171 5635 7159b1efa49a17f15c6828afe7fee851 ""
   (generated)
   "report.log"
+  "report.aux"
+  "report.pdf"
   "/Users/jstaley/workspace/kalman_filter/report/report.aux"
   "/Users/jstaley/workspace/kalman_filter/report/report.pdf"
-  "report.aux"
   "/Users/jstaley/workspace/kalman_filter/report/report.log"
-  "report.pdf"

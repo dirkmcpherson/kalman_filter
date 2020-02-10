@@ -72,6 +72,9 @@ INPUT /usr/local/texlive/2019/texmf-dist/fonts/tfm/public/cm/cmbx10.tfm
 INPUT /usr/local/texlive/2019/texmf-dist/fonts/tfm/public/cm/cmtt10.tfm
 OUTPUT /Users/jstaley/workspace/kalman_filter/report/report.pdf
 INPUT /usr/local/texlive/2019/texmf-var/fonts/map/pdftex/updmap/pdftex.map
+INPUT /Users/jstaley/workspace/kalman_filter/report/conf_ellipses.png
+INPUT /Users/jstaley/workspace/kalman_filter/report/conf_ellipses.png
+INPUT /Users/jstaley/workspace/kalman_filter/report/conf_ellipses.png
 INPUT /usr/local/texlive/2019/texmf-dist/fonts/tfm/public/cm/cmr12.tfm
 INPUT /usr/local/texlive/2019/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm
 INPUT /Users/jstaley/workspace/kalman_filter/report/report.aux
