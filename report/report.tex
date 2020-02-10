@@ -19,7 +19,7 @@ The minimal state vector holds the position and velocity of the system: $x = \{p
 
 {\bf Question 1.2}: Design the state transition probability function $p(x_t | u_t, x_{t-1})$. The transition function should contain linear matrices $A$ and $B$ and a noise covariance $R$.\\
 
-The state transition probability function gives the liklihood of being in state $x_t$ given the previous state $x_{t-1}$ and the command signal $u_t$. The Kalman Filter models all uncertainty as gaussian noise. So the new state $x_t$ is actually the mean of a gaussian distribution given by eqn. \ref{position_update}, where $A$ is a matrix that converts the previous state forward by one timestep, and $B$ is a matrix that converts the command signal to changes in state. The covariance of the gaussian distribution is given in eqn. \ref{covariance_update}, where the noise matrix $R$ is constructed from the variance of the expected noise, and the vector $G$ which describes how the random variable (acceleration in this case) will affect each state variable (eqn. \ref{R_calc}). The state transition probability function is given by the mean $x_t$ and covariance $\Sigma_t$. The values for $A$, $B$, and $G$ can be found in the top of the attached python file. 
+The state transition probability function gives the liklihood of being in state $x_t$ given the previous state $x_{t-1}$ and the command signal $u_t$. The Kalman Filter models all uncertainty as gaussian noise. So the new state $x_t$ is actually the mean of a gaussian distribution given by eqn. \ref{position_update}, where $A$ is a matrix that converts the previous state forward by one timestep, and $B$ is a matrix that converts the command signal to changes in state. The covariance of the gaussian distribution is given in eqn. \ref{covariance_update}, where the noise matrix $R$ is constructed from the variance of the expected noise, and the vector $G$ which describes how the random variable (acceleration in this case) will affect each state variable (eqn. \ref{R_calc}). The state transition probability function is given by the mean $x_t$ and covariance $\Sigma_t$. The state is initialized to zero while the covariance is initialized to an identity matrix. The values for $A$, $B$, and $G$ can be found in the top of the attached python file.
 
 \begin{equation}\label{position_update}
     x_t = A_t x_{t-1} + B_t u_t
@@ -33,9 +33,22 @@ The state transition probability function gives the liklihood of being in state 
     R = \sigma^2 G G^T
 \end{equation}
 
-{\bf Question 1.3}: Implement the state prediction step of the Kalman filter, assuming that at time $t = 0$, we start at rest, i.e., $x_t = \dot{x}_t = \ddot{x}_t = 0.0$. Use your code to calculate the state distribution for times $t = 1, 2, \ldots, 5$.\\
+{\bf Question 1.3 + 1.4}: Implement the state prediction step of the Kalman filter, assuming that at time $t = 0$, we start at rest, i.e., $x_t = \dot{x}_t = \ddot{x}_t = 0.0$. Use your code to calculate the state distribution for times $t = 1, 2, \ldots, 5$.\\
+For each value of $t$ in the previous question, plot the joint posterior over $x$ and $\dot{x}$ in a diagram where $x$ is the horizontal and $\dot{x}$ is the vertical axis. For each posterior, you are asked to plot the uncertainty ellipse which is the ellipse of points that are one standard deviation away from the mean. Some additional information about uncertainty ellipses and how to calculate them using MATLAB or C++ can be found here: \url{http://www.visiondummy.com/2014/04/draw-error-ellipse-representing-covariance-matrix/}.
 
-{\bf Question 1.4}: For each value of $t$ in the previous question, plot the joint posterior over $x$ and $\dot{x}$ in a diagram where $x$ is the horizontal and $\dot{x}$ is the vertical axis. For each posterior, you are asked to plot the uncertainty ellipse which is the ellipse of points that are one standard deviation away from the mean. Some additional information about uncertainty ellipses and how to calculate them using MATLAB or C++ can be found here: \url{http://www.visiondummy.com/2014/04/draw-error-ellipse-representing-covariance-matrix/}.
+I the predicted position of the sailboat at each timestep and drew an ellipse axis aligned with the eigenvectors of the covariance matrix to show the uncertainty in position and velocity. The size of the ellipse corresponds to roughly one-standard deviation of uncertainty. I could not find a chi-squared table value needed for 1 standard deviation (n where $1-n = 0.68$), so I used 0.75 as an approximation when calculating the size of the ellipse.
+
+\begin{figure}[h]
+    \includegraphics[width=8cm]{conf_ellipses.png}
+    \centering
+    \caption{Five timesteps of prediction for the motion model with multivariate gaussian noise. Each sample has a confidence ellipse that shows how uncertain the estimate of position and velocity are for that prediction.}
+\end{figure}
+
+The above figure shows how uncertainty in the predictions evolves over time. Before any updates our uncertainty is a circle around our first point, but as we forward predict and incorporate multivariate noise the uncertainty stretches over position and rotates. We have much more uncertainty in our position than we do in our velocity because our position is influenced by the noise in velocity in addition to the noise from acceleration. Its two steps down the chain.
+
+\section{Kalman Filter: Measurement}
+
+Prediction alone will result in greater and greater uncertainty as time goes on. Fortunately, your sailboat has a GPS sensor, which in expectation, measures the true position. However, the measurement is corrupted by Gaussian noise with covariance $\sigma_{gps}^2 = 8.0$.\\
 
 {\bf Question 2.1}: Define the measurement model. You will need to define matrices $C$ and $Q$. \\
 
