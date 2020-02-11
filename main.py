@@ -3,7 +3,7 @@ import numpy as np
 import time
 import matplotlib
 import os
-from PIL import Image
+# from PIL import Image
 matplotlib.use('tkagg')
 
 import matplotlib.pyplot as plt
@@ -65,8 +65,8 @@ def ABA_T(A, B):
 class GroundTruth:
     def __init__(self):
         self.state = np.zeros(2*Dimensions)
-        self.positionHistory = [self.position()]
-        self.velocityHistory = [self.velocity()]
+        self.positionHistory = []
+        self.velocityHistory = []
         self.noiseHistory = []
 
     def GenerateNoise(self):
@@ -110,8 +110,8 @@ class GroundTruth:
 class KalmanFilter:
     def __init__(self):
         self.state = np.zeros(2*Dimensions)
-        self.positionHistory = [self.position()]
-        self.velocityHistory = [self.velocity()]
+        self.positionHistory = []
+        self.velocityHistory = []
         self.ut = np.zeros(2*Dimensions) # control command (none)
         self.noiseMean = np.zeros(2 * Dimensions) # position and velocity for n-dimensions
         self.covariance = np.identity(2*Dimensions) # nxn where n is the number of state variables
@@ -133,20 +133,11 @@ class KalmanFilter:
 
         return mean, covariance
 
-
-    def update(self, z):
+    def measurementUpdate_noState(self, mean_bar, covariance_bar, z):
         # from measurement
         z_t = z.measurementHistory[-1]
         C = z.C
         Q = z.Q
-
-        # x_t_1 = self.state
-        # stateUpdate = np.matmul(A,x_t_1)
-        # controlUpdate = np.matmul(B, self.ut)
-        # mean_bar = stateUpdate + controlUpdate
-        # covariance_bar = ABA_T(A, self.covariance) + R
-
-        mean_bar, covariance_bar = self.stateDistribution_noMeasurement()
 
         CEpC_T_Q = 1/(ABA_T(C, covariance_bar) + Q) if Dimensions == 1 else np.linalg.inv(ABA_T(C, covariance_bar) + Q)
         K = np.matmul(np.matmul(covariance_bar, customT(C)), CEpC_T_Q) # Kalman gain
@@ -166,9 +157,46 @@ class KalmanFilter:
 
         self.covariance = covariance
         self.state = mean
-        # x_t = stateUpdate + controlUpdate + epsilon
+        
+        return mean, covariance
 
-        print(mean)
+    def update(self, z):
+        # from measurement
+        # z_t = z.measurementHistory[-1]
+        # C = z.C
+        # Q = z.Q
+
+        # x_t_1 = self.state
+        # stateUpdate = np.matmul(A,x_t_1)
+        # controlUpdate = np.matmul(B, self.ut)
+        # mean_bar = stateUpdate + controlUpdate
+        # covariance_bar = ABA_T(A, self.covariance) + R
+
+        mean_bar, covariance_bar = self.stateDistribution_noMeasurement()
+
+        mean, covariance = self.measurementUpdate_noState(mean_bar, covariance_bar, z)
+
+        # CEpC_T_Q = 1/(ABA_T(C, covariance_bar) + Q) if Dimensions == 1 else np.linalg.inv(ABA_T(C, covariance_bar) + Q)
+        # K = np.matmul(np.matmul(covariance_bar, customT(C)), CEpC_T_Q) # Kalman gain
+        # if (Dimensions == 1):
+        #     K = K[:,None] # transpose 1-D (should be a matrix but its not so do it this way)
+
+        # self.Kalman_gains.append(K)
+
+        # mean = mean_bar + np.matmul(K, (z_t - np.matmul(C, mean_bar))) 
+        # KC = np.multiply(K,C) if Dimensions == 1 else np.matmul(K,C)
+        # I = np.identity(2*Dimensions)
+        # covariance = np.matmul((I - KC), covariance_bar)
+
+        # if (DEBUG):
+        #     embed()
+        #     time.sleep(1)
+
+        # self.covariance = covariance
+        # self.state = mean
+        # # x_t = stateUpdate + controlUpdate + epsilon
+
+        # print(mean)
 
         self.state = mean
         self.positionHistory.append(self.position())
@@ -203,6 +231,8 @@ def p1_3():
     covariances = [np.identity(2)]
     for i in range(n):
         m, cv = kf.stateDistribution_noMeasurement()
+
+        # save state and covariance
         kf.state = m
         kf.covariance = cv
         means.append(m)
@@ -262,7 +292,75 @@ def p1_3():
     plt.savefig('results.png', bbox_inches='tight')
     with Image.open('results.png') as img:
         img.show()
-    
+
+def p2_2():
+    beforeMeasure = 5
+    gt = GroundTruth()
+    kf = KalmanFilter()
+    gps = GPS()
+
+    means = []
+    covariances = []
+    for i in range(beforeMeasure):
+        m, cv = kf.stateDistribution_noMeasurement()
+        # gt.update()
+
+        # save state and covariance
+        kf.state = m
+        kf.covariance = cv
+        means.append(m)
+        covariances.append(cv)
+
+        kf.positionHistory.append(m)
+        # gps.measure(gt)
+
+    gps.measurementHistory.append([10.])
+    # gps.measure(gt)
+    mean, covariance = kf.measurementUpdate_noState(kf.state, kf.covariance, gps)
+    means.append(mean)
+    covariances.append(covariance)
+    kf.positionHistory.append(m)
+
+    print("Mean changed from {} to {}".format(means[-2], means[-1]))
+    print("covariance from {} to {}".format(covariances[-2], covariances[-1]))
+    fig, ax = plt.subplots()
+    x = [entry[0] for entry in means]
+    y = [entry[1] for entry in means]
+
+    ax.scatter(x,y)
+    plt.ylabel("velocity")
+    plt.xlabel("position")
+    plt.title("1D State Distribution")
+    plt.show()
+
+    # plotResults_1D(gt, kf, gps)
+
+def plotResults_1D(gt, kf, z):
+    x = [entry for entry in gt.positionHistory]
+    x1 = [entry[0] for entry in kf.positionHistory] 
+    x2 = [entry for entry in z.measurementHistory]
+    # while len(x2) < len(x):
+    #     x2.insert(None, 0)
+
+    t = [i for i in range(len(x))]
+    embed()
+    plt.figure(0)
+    plt.plot(t, x, t, x1, '--')#, t, x2, 'k+')
+    plt.ylabel("position")
+    plt.xlabel("timestep")
+    plt.title("1D Kalman Filter")
+    # embed()
+    # y = z.measurementHistory
+
+
+    # y = [entry[1] for entry in self.positionHistory] if (Dimensions > 1) else [i for i in range(len(x))]
+    plt.legend(["Ground Truth", "Kalman Filter", "Measurements"])
+    plt.savefig('results.png', bbox_inches='tight')
+    # with Image.open('results.png') as img:
+    #     img.show()
+
+    # plotKalmanGain(kf.Kalman_gains)
+    plt.show()
 
     # embed()
 
@@ -273,9 +371,9 @@ def main():
     z = GPS()
 
     for i in range(simulation_iterations):
+        gt.update()
         z.measure(gt)
         kf.update(z)
-        gt.update()
 
         # print("diff: ", abs(z.measurementHistory[-1]-gt.positionHistory[-1]))
 
@@ -296,8 +394,8 @@ def main():
         x = [entry for entry in gt.positionHistory]
         x1 = [entry for entry in kf.positionHistory] 
         x2 = [entry for entry in z.measurementHistory]
-        x2.append(None)
         t = [i for i in range(len(x))]
+        # embed()
         plt.plot(t, x, t, x1, '--', t, x2, 'k+')
         plt.ylabel("position")
         plt.xlabel("timestep")
@@ -309,11 +407,11 @@ def main():
     # y = [entry[1] for entry in self.positionHistory] if (Dimensions > 1) else [i for i in range(len(x))]
     plt.legend(["Ground Truth", "Kalman Filter", "Measurements"])
     plt.savefig('results.png', bbox_inches='tight')
-    with Image.open('results.png') as img:
-        img.show()
+    # with Image.open('results.png') as img:
+    #     img.show()
 
     # plotKalmanGain(kf.Kalman_gains)
-    # plt.show() # this crashes everything on OSX
+    plt.show() # this crashes everything on OSX
 
 def plotKalmanGain(K):
     numPlots = max(K[0].shape)
@@ -334,5 +432,6 @@ if __name__ == "__main__":
     import sys
     if (len(sys.argv) > 1):
         DEBUG = sys.argv[1]
-    # main()
-    p1_3()
+    main()
+    # p1_3()
+    # p2_2()

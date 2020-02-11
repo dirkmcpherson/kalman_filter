@@ -46,13 +46,27 @@ I the predicted position of the sailboat at each timestep and drew an ellipse ax
 
 The above figure shows how uncertainty in the predictions evolves over time. Before any updates our uncertainty is a circle around our first point, but as we forward predict and incorporate multivariate noise the uncertainty stretches over position and rotates. We have much more uncertainty in our position than we do in our velocity because our position is influenced by the noise in velocity in addition to the noise from acceleration. Its two steps down the chain.
 
-\section{Kalman Filter: Measurement}
+{\bf Question 2.1}: \textit{Define the measurement model. You will need to define matrices $C$ and $Q$. \\}
 
-Prediction alone will result in greater and greater uncertainty as time goes on. Fortunately, your sailboat has a GPS sensor, which in expectation, measures the true position. However, the measurement is corrupted by Gaussian noise with covariance $\sigma_{gps}^2 = 8.0$.\\
+The measurement model describes the likihood of observing a measurement $z_t$ given the current state $x_t$, the sampled expected noise distribution $\delta_t$, and matrix $C_t$ which converts the state into the measurement \footnote{$C_t$ is a $kxn$ matrix where $k$ is the length of the measurement and $n$ is the dimension of the state}. In this case, $C_t$ just passes through the spatial components of our state, since GPS data does not measure velocity. The exact values of $C_t$ can be found in the attached python script. 
 
-{\bf Question 2.1}: Define the measurement model. You will need to define matrices $C$ and $Q$. \\
+\begin{equation}
+    z_t = C_tx_t + \delta_t
+\end{equation}
 
-{\bf Question 2.2}: Implement the measurement update. Suppose at time $t = 5$, we query our sensor for the first time to obtain the measurement $z = 10$. State the parameters of the Gaussian estimate before and after incorporating the measurement. Afterwards, implement the sensor modal to randomly sample the true position, corrupted with noise $\sigma_{gps}^2$. \\
+$delta_t$ is sampled from a multivariate gaussian distribution with mean 0 and variance $\sigma_{gps}^2$. 
+
+{\bf Question 2.2}: \textit{Implement the measurement update. Suppose at time $t = 5$, we query our sensor for the first time to obtain the measurement $z = 10$. State the parameters of the Gaussian estimate before and after incorporating the measurement. Afterwards, implement the sensor modal to randomly sample the true position, corrupted with noise $\sigma_{gps}^2$. \\}
+
+The first five position updates drift around with estimates of the acceleration until the measurement of $z=10$ relocates the estimate towards that position. The velocity estimate changes significantly as well because the agent must have been moving quickly to get to that position (i.e. the covariance matrix links the position and velocity). In the figure below, the dot in the top right is the prediction after the measurement update. 
+
+\begin{figure}[h]
+    \includegraphics[width=8cm]{first_measure.png}
+    \centering
+    \caption{Five position updates without a measurement update followed by a single measurement of 10. The dot in the upper left reflects the measured estimate.}
+\end{figure}
+
+Here is a 
 
 {\bf Question 2.3}: All of a sudden, the sky gets cloudy which may cause the sensor to fail and not produce a measurement with probability $p_{gps-fail}$. For three different values of this probability (e.g., 0.1, 0.5, and 0.9), compute and plot the expected error from the true position at time $t = 20$. You may do so by running up to $N$ simulations and use the observed errors to obtain the expected error empirically.  
 
