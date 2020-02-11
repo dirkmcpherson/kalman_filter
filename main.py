@@ -214,16 +214,43 @@ def p1_3():
     
     ax.scatter(x,y)
 
-    angle = 15
+    normalizingConstant = 1.
     for i in range(len(x)):
         center = (x[i],y[i])
 
         eigenVals, eigenVectors = np.linalg.eig(covariances[i])
-        width = 0.2
-        height = 0.1
-        angle+=15.
-        ax.add_patch(Ellipse(center, width, height, angle=angle, facecolor="None", edgecolor="red"))
+        # embed()
+        # normalize eigenvalues
+        stdDevUncertainty = 2 * np.sqrt(2.77)
+        eigenVals = [stdDevUncertainty * entry/sum(eigenVals) for entry in eigenVals]
+
+        width = eigenVals[0]
+        height = eigenVals[1]
+        largestEigenVector = eigenVectors[np.argmax(eigenVals)]
+        angle = np.arctan(largestEigenVector[1]/ largestEigenVector[0])
+        # print("i: ", i)
+        # print("    " + str(eigenVals))
+        # print("    " + str(eigenVectors))
+        print("angle ", angle)
+        np.angle(angle)
+        ax.add_patch(Ellipse(center, width, height, angle=np.angle(angle), facecolor="None", edgecolor="red"))
     
+
+    extend = 2
+    xlims = (min(x)-extend, max(x) + extend)
+    ylims = (min(y)-extend, max(y) + extend)
+    ax.set(xlim=xlims,ylim=ylims)
+
+
+    # ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    # color = 'tab:blue'
+    # ax2.set_ylabel('acceleration', color=color)  # we already handled the x-label with ax1
+    # ax2.plot([i for i in range(len(gt))], data2, color=color)
+    # ax2.tick_params(axis='y', labelcolor=color)
+
+    # fig.tight_layout()  # otherwise the right y-label is slightly clipped
+
     plt.ylabel("velocity")
     plt.xlabel("position")
     plt.title("1D State Distribution")
