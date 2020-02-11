@@ -13,11 +13,11 @@
 \begin{document}
 
 \maketitle
-{\bf Question 1.1}: what is the minimal state vector for the Kalman filter so that the resulting system is Markovian?\\
+{\bf Question 1.1}: textit{what is the minimal state vector for the Kalman filter so that the resulting system is Markovian?}\\
 
-The minimal state vector holds the position and velocity of the system: $x = \{p_n, v_n\}$ where $n$ is the number of tracked dimensions. Position and velocity depend on the history of the system, and the condition probability distribution of future states depends on only these two variables. The acceleration does not need to be included because it's a random variable and doesn't depend on time or any other variable. 
+The minimal state vector holds the position and velocity of the system: $x = \{p_n, v_n\}$ where $n$ is the number of tracked dimensions. Position and velocity depend on the history of the system, and the condition probability distribution of future states depends on only these two variables. The acceleration does not need to be included because it's a random variable and doesn't depend on time or any other variable.  \\
 
-{\bf Question 1.2}: Design the state transition probability function $p(x_t | u_t, x_{t-1})$. The transition function should contain linear matrices $A$ and $B$ and a noise covariance $R$.\\
+{\bf Question 1.2}: \textit{Design the state transition probability function $p(x_t | u_t, x_{t-1})$. The transition function should contain linear matrices $A$ and $B$ and a noise covariance $R$.}\\
 
 The state transition probability function gives the liklihood of being in state $x_t$ given the previous state $x_{t-1}$ and the command signal $u_t$. The Kalman Filter models all uncertainty as gaussian noise. So the new state $x_t$ is actually the mean of a gaussian distribution given by eqn. \ref{position_update}, where $A$ is a matrix that converts the previous state forward by one timestep, and $B$ is a matrix that converts the command signal to changes in state. The covariance of the gaussian distribution is given in eqn. \ref{covariance_update}, where the noise matrix $R$ is constructed from the variance of the expected noise, and the vector $G$ which describes how the random variable (acceleration in this case) will affect each state variable (eqn. \ref{R_calc}). The state transition probability function is given by the mean $x_t$ and covariance $\Sigma_t$. The state is initialized to zero while the covariance is initialized to an identity matrix. The values for $A$, $B$, and $G$ can be found in the top of the attached python file.
 
@@ -32,9 +32,9 @@ The state transition probability function gives the liklihood of being in state 
 \begin{equation}\label{R_calc}
     R = \sigma^2 G G^T
 \end{equation}
-
-{\bf Question 1.3 + 1.4}: Implement the state prediction step of the Kalman filter, assuming that at time $t = 0$, we start at rest, i.e., $x_t = \dot{x}_t = \ddot{x}_t = 0.0$. Use your code to calculate the state distribution for times $t = 1, 2, \ldots, 5$.\\
-For each value of $t$ in the previous question, plot the joint posterior over $x$ and $\dot{x}$ in a diagram where $x$ is the horizontal and $\dot{x}$ is the vertical axis. For each posterior, you are asked to plot the uncertainty ellipse which is the ellipse of points that are one standard deviation away from the mean. Some additional information about uncertainty ellipses and how to calculate them using MATLAB or C++ can be found here: \url{http://www.visiondummy.com/2014/04/draw-error-ellipse-representing-covariance-matrix/}.
+\\
+{\bf Question 1.3 + 1.4}: \textit{Implement the state prediction step of the Kalman filter, assuming that at time $t = 0$, we start at rest, i.e., $x_t = \dot{x}_t = \ddot{x}_t = 0.0$. Use your code to calculate the state distribution for times $t = 1, 2, \ldots, 5$.
+For each value of $t$ in the previous question, plot the joint posterior over $x$ and $\dot{x}$ in a diagram where $x$ is the horizontal and $\dot{x}$ is the vertical axis. For each posterior, you are asked to plot the uncertainty ellipse which is the ellipse of points that are one standard deviation away from the mean. Some additional information about uncertainty ellipses and how to calculate them using MATLAB or C++ can be found here: \url{http://www.visiondummy.com/2014/04/draw-error-ellipse-representing-covariance-matrix/}.} \\
 
 I the predicted position of the sailboat at each timestep and drew an ellipse axis aligned with the eigenvectors of the covariance matrix to show the uncertainty in position and velocity. The size of the ellipse corresponds to roughly one-standard deviation of uncertainty. I could not find a chi-squared table value needed for 1 standard deviation (n where $1-n = 0.68$), so I used 0.75 as an approximation when calculating the size of the ellipse.
 
@@ -54,7 +54,7 @@ The measurement model describes the likihood of observing a measurement $z_t$ gi
     z_t = C_tx_t + \delta_t
 \end{equation}
 
-$delta_t$ is sampled from a multivariate gaussian distribution with mean 0 and variance $\sigma_{gps}^2$. 
+$delta_t$ is sampled from a multivariate gaussian distribution with mean 0 and variance $\sigma_{gps}^2$. \\
 
 {\bf Question 2.2}: \textit{Implement the measurement update. Suppose at time $t = 5$, we query our sensor for the first time to obtain the measurement $z = 10$. State the parameters of the Gaussian estimate before and after incorporating the measurement. Afterwards, implement the sensor modal to randomly sample the true position, corrupted with noise $\sigma_{gps}^2$. \\}
 
@@ -66,16 +66,39 @@ The first five position updates drift around with estimates of the acceleration 
     \caption{Five position updates without a measurement update followed by a single measurement of 10. The dot in the upper left reflects the measured estimate.}
 \end{figure}
 
-Here is a 
+Before the measurement $x = {3.1, 2.2}$ and $\Sigma = [[67.2, 17.5] [17.5, 6]]$. After the measurement $x = {9.3, 3.8}$ and $\Sigma = [[7.1, 1.9],[1.9, 1.93]]$. The measurement moves the mean and reduces the variance. 
 
-{\bf Question 2.3}: All of a sudden, the sky gets cloudy which may cause the sensor to fail and not produce a measurement with probability $p_{gps-fail}$. For three different values of this probability (e.g., 0.1, 0.5, and 0.9), compute and plot the expected error from the true position at time $t = 20$. You may do so by running up to $N$ simulations and use the observed errors to obtain the expected error empirically.  
+Below is a sample position trajectory with measurement updates at every step. The Kalman Filter's estimate weaves back and forth but closely follows the ground truth thanks to the GPS. 
+
+\begin{figure}[h]
+    \includegraphics[width=12cm]{perfect_measurement.png}
+    \centering
+    \caption{Position estimate with high-functioning GPS.}
+\end{figure} 
+
+{\bf Question 2.3}: \textit{All of a sudden, the sky gets cloudy which may cause the sensor to fail and not produce a measurement with probability $p_{gps-fail}$. For three different values of this probability (e.g., 0.1, 0.5, and 0.9), compute and plot the expected error from the true position at time $t = 20$. You may do so by running up to $N$ simulations and use the observed errors to obtain the expected error empirically.}
+
+The following chart was produced by running 100 simulations at each error rate and averaging the error for each timestep. 
+
+\begin{figure}[h]
+    \includegraphics[width=12cm]{error_rates.png}
+    \centering
+    \caption{Error between ground truth and kalman filter estimation for various sensor failure rates.}
+\end{figure} 
+
+Its notable that the error stays low and manageable for sensor failure rates up to 50\%; the filter is robust to sensor error as long as it gets accurate readings occasionally. Once the failure rate reaches 90\% its a different story. The Kalman filter error continuously rises as it does not have enough information to accurately estimate the state.  \\
 
 \section{Extra Credit}
 
-Now, formulate both the prediction and measurement steps in the 2-D case. Construct a plot showing the true position and the position tracked by the Kalman filter over the first 30 time steps. \\
+For extra credit I modified the above system to work for 2 dimensions. Many of the matrices had to be modified along with other small changes, but its conceptually identical to the 1D case.
 
-\noindent {\bf What to turn in:} A PDF document with the answers to the questions, along with the code implementation and a README file that describes what to run in order to get the results in your PDF. You can use a language of your choice. 
+\begin{figure}[h!]
+    \includegraphics[width=12cm]{2d_kalman.png}
+    \centering
+    \caption{2D Kalman Filter.}
+\end{figure} 
 
+The above figure just shows one trial, but the 2D filter seems much more error-prone than the 1D filter. It will typically track the ground truth well, but can get thrown off for long periods (as seen above). Its not clear to me whether this is a bug in my implementation or the increase in noise that comes with the larger state space. 
 
 %\bibliographystyle{plain}
 %\bibliography{references}

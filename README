@@ -1,0 +1,10 @@
+James Staley 
+February 10th, 2020
+
+The bottom of main.py has 4 commented out function calls, three for each of the three problems and main() for plotting ground truth vs kalman filter vs measurements. Uncomment the one you'd like to run.
+
+$python main.py
+
+I had to use PIL to view my images because there is a bizarre bug with tkinter and OSX (instant logout and crash), otherwise normal packages are used. 
+
+I didn't have time to read over the report :|. Its 11:54pm, sorry for typos. 

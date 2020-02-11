@@ -3,7 +3,8 @@ import numpy as np
 import time
 import matplotlib
 import os
-# from PIL import Image
+import random
+from PIL import Image
 matplotlib.use('tkagg')
 
 import matplotlib.pyplot as plt
@@ -48,7 +49,7 @@ R = WindVariance * np.matmul(vertical, horizontal) # The covariance matrix of th
 
 
 
-print("R: {}".format(R))
+# print("R: {}".format(R))
 # timestep is 1, so its left out of all equations
 
 # Wrapper for np.transpose that also converts a row vector to a column vector and vica versa
@@ -101,7 +102,7 @@ class GroundTruth:
 
         self.state = x_t
 
-        print(x_t)
+        # print(x_t)
         # print("{:2.2f}, {:2.2f}, {:2.2f}".format(self.position[0], self.velocity[0], acceleration[0]))
 
         self.noiseHistory.append(acceleration)
@@ -303,15 +304,12 @@ def p2_2():
     covariances = []
     for i in range(beforeMeasure):
         m, cv = kf.stateDistribution_noMeasurement()
-        # gt.update()
-
-        # save state and covariance
         kf.state = m
         kf.covariance = cv
+        kf.positionHistory.append(m)
         means.append(m)
         covariances.append(cv)
 
-        kf.positionHistory.append(m)
         # gps.measure(gt)
 
     gps.measurementHistory.append([10.])
@@ -331,9 +329,59 @@ def p2_2():
     plt.ylabel("velocity")
     plt.xlabel("position")
     plt.title("1D State Distribution")
-    plt.show()
+    # plt.show()
 
-    # plotResults_1D(gt, kf, gps)
+def p2_3():
+    p_fail = [0.1, 0.5, 0.9]
+    numTrials = 100
+    xs = []
+    ts = []
+    for failRate in p_fail: 
+        failureRate = failRate
+        allError = [[] for n in range(numTrials)]    
+        for n in range(numTrials):
+            gt = GroundTruth()
+            kf = KalmanFilter()
+            gps = GPS()
+
+            for i in range(20):
+                gt.update()
+
+                if (random.random() > failureRate):
+                    gps.measure(gt)
+                    kf.update(gps)
+                else:
+                    m, cv = kf.stateDistribution_noMeasurement()
+                    kf.state = m
+                    kf.covariance = cv
+                    kf.positionHistory.append(m[0])
+
+                error = abs(gt.position() - kf.position())
+                print("error", error)
+                allError[n].append(error[0])
+
+        # embed()
+            
+
+        a = np.array(allError)
+
+        x = a.mean(0)
+        t = [i for i in range(len(x))]
+        xs.append(x)
+        ts.append(t)
+    
+    # embed()
+    plt.plot(ts[0],xs[0],ts[1],xs[1],ts[2],xs[2])
+    plt.legend(["0.1","0.5","0.9"])
+    plt.ylabel("error (ground truth - estimate)")
+    plt.xlabel("timesteps")
+    plt.title("Error over time for different sensor failure rates.")
+    plt.savefig('results.png', bbox_inches='tight')
+    with Image.open('results.png') as img:
+        img.show()
+    
+
+
 
 def plotResults_1D(gt, kf, z):
     x = [entry for entry in gt.positionHistory]
@@ -407,11 +455,11 @@ def main():
     # y = [entry[1] for entry in self.positionHistory] if (Dimensions > 1) else [i for i in range(len(x))]
     plt.legend(["Ground Truth", "Kalman Filter", "Measurements"])
     plt.savefig('results.png', bbox_inches='tight')
-    # with Image.open('results.png') as img:
-    #     img.show()
+    with Image.open('results.png') as img:
+        img.show()
 
     # plotKalmanGain(kf.Kalman_gains)
-    plt.show() # this crashes everything on OSX
+    # plt.show() # this crashes everything on OSX
 
 def plotKalmanGain(K):
     numPlots = max(K[0].shape)
@@ -435,3 +483,4 @@ if __name__ == "__main__":
     main()
     # p1_3()
     # p2_2()
+    # p2_3()
